@@ -5,6 +5,8 @@
 #include "Components/InputComponent.h"
 #include "Engine/World.h"
 
+#include "DrawDebugHelpers.h"
+
 // Sets default values
 AGoKart::AGoKart()
 {
@@ -18,6 +20,28 @@ void AGoKart::BeginPlay()
 {
 	Super::BeginPlay();
 
+}
+
+FString GetEnumText(ENetRole Role)
+{
+	switch (Role)
+	{
+	case ROLE_None:
+		return "None";
+		break;
+	case ROLE_SimulatedProxy:
+		return "SimulatedProxy";
+		break;
+	case ROLE_AutonomousProxy:
+		return "AutonomousProxy";
+		break;
+	case ROLE_Authority:
+		return "Authority";
+		break;
+	default:
+		return "Error";
+		break;
+	}
 }
 
 // Called every frame
@@ -38,6 +62,8 @@ void AGoKart::Tick(float DeltaTime)
 	ApplyRotation(DeltaTime);
 
 	UpdateLocationFromVelocity(DeltaTime);
+
+	DrawDebugString(GetWorld(), FVector(0, 0, 100), GetEnumText(Role), this, FColor::White, DeltaTime);
 }
 
 FVector AGoKart::GetAirResistance() {
@@ -86,9 +112,34 @@ void AGoKart::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 void AGoKart::MoveForward(float Value)
 {
 	Throttle = Value;
+	Server_MoveForward(Value);
 }
+
 
 void AGoKart::MoveRight(float Value)
 {
 	SteeringThrow = Value;
+	Server_MoveRight(Value);
+}
+
+void AGoKart::Server_MoveForward_Implementation(float Value)
+{
+	Throttle = Value;
+}
+
+bool AGoKart::Server_MoveForward_Validate(float Value)
+{
+	// A value over 1 is impossible, ensures client doesn't send that 
+	return FMath::Abs(Value) <= 1;
+}
+
+void AGoKart::Server_MoveRight_Implementation(float Value)
+{
+	SteeringThrow = Value;
+}
+
+bool AGoKart::Server_MoveRight_Validate(float Value)
+{
+	// A value over 1 is impossible, ensures client doesn't send that 
+	return FMath::Abs(Value) <= 1;
 }
